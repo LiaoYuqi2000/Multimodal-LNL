@@ -1,0 +1,63 @@
+data:
+  num_classes: 101
+  dataset_name: "Food-101N"
+  train_data_path: '/data1/yuqi/data/Food-101N' 
+  test_data_path: '/data1/yuqi/data/Food-101'
+
+classifier:
+  classifier_save_path: "/data1/yuqi/clip/Food-101N/submit/zero_shot_classifier.pth"   # The classifier is initialized with label text features.
+  synsets_path: "/data1/yuqi/data/Food-101/meta/classes.txt"      # category name path
+  template_name: "simple_template"             #  "openai_imagenet_template"，"simple_template" 
+
+
+clip:
+  model_type: ["ViT-L-14", 'datacomp_xl_s13b_b90k']
+  pretrained_model_path: "/data1/yuqi/data/pretrained_model/clip_ViT-L-14.pth"
+
+
+stage1:
+  th_o: 0.01
+  ood_file_path: "./ood.json"
+
+
+stage2:
+  K: 10                                                             # Number of augmentations per image
+  th: 0.7                                                           # Clean sample selection threshold
+  consistency_score_save_path: "./det_clean_noisy_score.json"             # Confidence score file path
+
+
+stage3:
+  batch_size: 32
+  base_lr: 0.0001
+  warm_up_epochs: 3
+  num_epochs: 20
+  num_workers: 5
+  resume: 0
+  checkpoint_dir: "./checkpoint/checkpoint_semi"    # Model save path 
+  T: 2                   # Temperature coefficient
+  threshold: 0.95        # Threshold for selecting high-confidence pseudo labels
+  lambda_u: 0.5          # Loss weight for noisy samples
+
+
+finetune:
+  batch_size: 32
+  base_lr: 0.0001
+  num_epochs: 20
+  num_workers: 5
+  resume: 0
+  checkpoint_dir: "./checkpoint/checkpoint_finetune_wo_ood"    # Model save path 
+  train_mode: "finetune_clean"    # choices=["finetune_clean", "finetune_total", "finetune_wo_ood"]
+
+
+
+model_ensemble:
+  # trained_model_path: "./checkpoint_semi"  
+  trained_model_path: "./checkpoint/checkpoint_semi_1e-4"       
+  alpha_list: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] 
+
+ 
+
+test:
+  test_model_path: ""             # Zero-shot
+  # test_model_path:  "./checkpoint/checkpoint_semi/best_model.pth"   # Test the trained model
+  # test_model_path: "/data1/yuqi/clip/Food-101N/checkpoint/checkpoint_semi_1e-4/best_model.pth"
